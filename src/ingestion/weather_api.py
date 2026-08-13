@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 from config.cities import CITIES
 
-BASE_URL = "https://api.open-meteo.com/v1/forecast"
+BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 def fetch_weather(latitude, longitude, start_date, end_date):
     params = {

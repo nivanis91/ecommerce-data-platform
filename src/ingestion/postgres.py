@@ -1,19 +1,15 @@
-import os
-
 import pandas as pd
-import psycopg2
-from dotenv import load_dotenv
+from config.connections import get_postgres_connection
 
-load_dotenv()
+def get_order_date_range(conn):
+    query = """
+        SELECT
+            MIN(order_date) AS start_date,
+            MAX(order_date) AS end_date
+        FROM orders
+    """
 
-def get_connection():
-    return psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST"),
-        database=os.getenv("POSTGRES_DB"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        sslmode="require"
-    )
+    return pd.read_sql(query, conn)
 
 def extract_orders(conn):
     query = """
@@ -28,8 +24,7 @@ def extract_orders(conn):
 
 
 def main():
-    conn = get_connection()
-
+    conn = get_postgres_connection
     try:
         orders = extract_orders(conn)
 
