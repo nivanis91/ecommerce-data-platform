@@ -1,9 +1,8 @@
 import requests
 import pandas as pd
-
+from config.cities import CITIES
 
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
-
 
 def fetch_weather(latitude, longitude, start_date, end_date):
     params = {
@@ -40,28 +39,32 @@ def parse_weather(data, location):
     return df
 
 
-def get_weather(latitude, longitude, start_date, end_date, location):
+def get_weather(city, start_date, end_date):
     data = fetch_weather(
-        latitude=latitude,
-        longitude=longitude,
+        latitude=city["latitude"],
+        longitude=city["longitude"],
         start_date=start_date,
         end_date=end_date,
     )
 
     return parse_weather(
         data=data,
-        location=location,
+        location=city["name"],
     )
 
 
 if __name__ == "__main__":
-    df = get_weather(
-        latitude=44.7866,
-        longitude=20.4489,
-        start_date="2026-08-01",
-        end_date="2026-08-12",
-        location="Belgrade",
-    )
-    
-    print(df.head())
+    all_weather = pd.DataFrame()
+
+    for city in CITIES:
+        df = get_weather(
+            city=city,
+            start_date="2026-08-01",
+            end_date="2026-08-12",
+        )
+
+        all_weather = pd.concat([all_weather, df])
+
+    print(all_weather.tail(15))
     print(f"Rows: {len(df)}")
+    
