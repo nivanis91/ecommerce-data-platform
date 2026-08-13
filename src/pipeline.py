@@ -4,7 +4,7 @@ from ingestion.postgres import get_order_date_range
 from ingestion.weather_api import get_weather
 from ingestion.csv_import import list_files, load_csv
 from config.cities import CITIES
-
+from google.cloud import storage, bigquery
 
 import pandas as pd
 
@@ -54,4 +54,16 @@ def run_marketing_csv_ingestion():
 
 if __name__ == "__main__":
     #run_weather_ingestion()
-    run_marketing_csv_ingestion()
+    #run_marketing_csv_ingestion()
+    
+    client = storage.Client()
+
+    for bucket in client.list_buckets():
+        print(bucket.name)
+
+    bq = bigquery.Client()
+    query = "SELECT * FROM `ecommerce.customers` LIMIT 10"
+
+    results = bq.query(query).result()
+    for row in results:
+        print(row)
