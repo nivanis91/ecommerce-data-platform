@@ -63,8 +63,7 @@ if __name__ == "__main__":
             end_date="2026-08-12",
         )
 
-        all_weather = pd.concat([all_weather, df])
+        all_weather = pd.concat([all_weather, df], ignore_index=True)
 
     print(all_weather.tail(15))
     print(f"Rows: {len(df)}")
-    
