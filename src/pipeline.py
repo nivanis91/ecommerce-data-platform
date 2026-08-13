@@ -1,7 +1,10 @@
-from config.connections import get_postgres_connection
+import os
+from config.connections import get_postgres_connection, get_s3_client
 from ingestion.postgres import get_order_date_range
 from ingestion.weather_api import get_weather
+from ingestion.csv_import import list_files, load_csv
 from config.cities import CITIES
+
 
 import pandas as pd
 
@@ -34,5 +37,21 @@ def run_weather_ingestion():
 
     return result 
 
+
+def run_marketing_csv_ingestion():
+    s3 = get_s3_client()
+
+    files = list_files(s3)
+
+    print("Files:")
+    for file in files:
+        print(file)
+        df = load_csv(
+            s3,
+            file
+            )
+        print(df)    
+
 if __name__ == "__main__":
-    run_weather_ingestion()
+    #run_weather_ingestion()
+    run_marketing_csv_ingestion()
