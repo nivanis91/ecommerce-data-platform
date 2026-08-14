@@ -4,3 +4,5 @@ python-dotenv
 boto3
 google-cloud-storage
 google-cloud-bigquery
+pyarrow
+pandas-gbq

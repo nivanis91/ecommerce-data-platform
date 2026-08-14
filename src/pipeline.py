@@ -8,6 +8,22 @@ from google.cloud import storage, bigquery
 
 import pandas as pd
 
+def load_dataframe_to_bigquery(df, table_id):
+    client = bigquery.Client()
+
+    job_config = bigquery.LoadJobConfig(
+        write_disposition=bigquery.WriteDisposition.WRITE_APPEND
+    )
+
+    job = client.load_table_from_dataframe(
+        df,
+        table_id,
+        job_config=job_config,
+    )
+    
+    job.result()
+
+    print(f"Loaded {len(df)} rows into {table_id}")
 
 def run_weather_ingestion():
 
@@ -33,7 +49,8 @@ def run_weather_ingestion():
         dfs.append(df)
 
     result = pd.concat(dfs, ignore_index=True)
-    print(result)
+
+    load_dataframe_to_bigquery(result, "raw.weather")
 
     return result 
 
@@ -52,10 +69,7 @@ def run_marketing_csv_ingestion():
             )
         print(df)    
 
-if __name__ == "__main__":
-    #run_weather_ingestion()
-    #run_marketing_csv_ingestion()
-    
+def run_get_data_from_gcp():
     client = storage.Client()
 
     for bucket in client.list_buckets():
@@ -67,3 +81,9 @@ if __name__ == "__main__":
     results = bq.query(query).result()
     for row in results:
         print(row)
+
+if __name__ == "__main__":
+    run_weather_ingestion()
+    #run_marketing_csv_ingestion()
+    #run_get_data_from_gcp()
+
