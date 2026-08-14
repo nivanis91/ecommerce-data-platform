@@ -1,10 +1,11 @@
 import os
 from config.connections import get_postgres_connection, get_s3_client
-from ingestion.postgres import get_order_date_range
+from ingestion.postgres import get_order_date_range, extract_orders, extract_customers, extract_stores, extract_order_items, extract_products
 from ingestion.weather_api import get_weather
 from ingestion.csv_import import list_files, load_csv
 from config.cities import CITIES
 from google.cloud import storage, bigquery
+from decimal import Decimal
 
 import pandas as pd
 
@@ -54,20 +55,59 @@ def run_weather_ingestion():
 
     return result 
 
+def clean_marketing_data_frame_before_db_upload(all_files_data_frame):
+    df = all_files_data_frame.drop_duplicates(subset="campaign_id", keep="first")
+    
+    df["city"] = df["city"].replace({
+        "Belgrad": "Belgrade"
+    })
+
+    df["start_date"] = pd.to_datetime(df["start_date"], errors="coerce").dt.date
+    df["end_date"] = pd.to_datetime(df["end_date"], errors="coerce").dt.date
+
+    df = df.dropna(subset=["spend"])
+
+    df = df[df["spend"] >= 0]
+
+    df = df[df["end_date"] >= df["start_date"]]
+
+    df = df.dropna()
+
+    # Strings
+    df["campaign_name"] = df["campaign_name"].astype("string")
+    df["channel"] = df["channel"].astype("string")
+    df["city"] = df["city"].astype("string")
+
+    # Numeric columns
+    df["campaign_id"] = pd.to_numeric(df["campaign_id"], errors="coerce").astype("int64")
+    df["budget"] = df["budget"].apply(lambda x: Decimal(str(x)))
+    df["spend"] = df["spend"].apply(lambda x: Decimal(str(x)))
+
+    return df
 
 def run_marketing_csv_ingestion():
     s3 = get_s3_client()
 
     files = list_files(s3)
 
+    files_array = []
+    all_files_data_frame = pd.DataFrame()
+
     print("Files:")
     for file in files:
         print(file)
-        df = load_csv(
+        loaded_csv = load_csv(
             s3,
             file
             )
-        print(df)    
+        files_array.append(loaded_csv)
+
+    all_files_data_frame = pd.concat(files_array)
+    all_files_data_frame['budget'] = all_files_data_frame['budget'].astype(float)
+
+    df = clean_marketing_data_frame_before_db_upload(all_files_data_frame)
+   
+    load_dataframe_to_bigquery(df, 'raw.marketing_campaigns')
 
 def run_get_data_from_gcp():
     client = storage.Client()
@@ -82,8 +122,27 @@ def run_get_data_from_gcp():
     for row in results:
         print(row)
 
+
+def ingest_table(extract_function, bq_table):
+    conn = get_postgres_connection()
+
+    try:
+        df = extract_function(conn)
+        
+        load_dataframe_to_bigquery(df, bq_table)
+    finally:
+        conn.close()
+
+def run_postgres_ingestion():
+    ingest_table(extract_customers, "raw.customers")
+    ingest_table(extract_stores, "raw.stores")
+    ingest_table(extract_orders, "raw.orders")
+    ingest_table(extract_products, "raw.products")
+    ingest_table(extract_order_items, "raw.order_items")
+    
 if __name__ == "__main__":
-    run_weather_ingestion()
+    #run_weather_ingestion()
     #run_marketing_csv_ingestion()
+    run_postgres_ingestion()
     #run_get_data_from_gcp()
 
