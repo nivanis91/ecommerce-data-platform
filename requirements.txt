@@ -6,3 +6,8 @@ google-cloud-storage
 google-cloud-bigquery
 pyarrow
 pandas-gbq
+
+apache-airflow-providers-standard
+apache-airflow-providers-postgres
+apache-airflow-providers-amazon
+apache-airflow-providers-google
