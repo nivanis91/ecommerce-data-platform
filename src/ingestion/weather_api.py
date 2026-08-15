@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from config.cities import CITIES
+from src.config.cities import CITIES
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 

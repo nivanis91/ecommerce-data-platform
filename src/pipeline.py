@@ -1,9 +1,9 @@
 import os
-from config.connections import get_postgres_connection, get_s3_client
-from ingestion.postgres import get_order_date_range, extract_orders, extract_customers, extract_stores, extract_order_items, extract_products
-from ingestion.weather_api import get_weather
-from ingestion.csv_import import list_files, load_csv
-from config.cities import CITIES
+from src.config.connections import get_postgres_connection, get_s3_client
+from src.ingestion.postgres import get_order_date_range, extract_orders, extract_customers, extract_stores, extract_order_items, extract_products
+from src.ingestion.weather_api import get_weather
+from src.ingestion.csv_import import list_files, load_csv
+from src.config.cities import CITIES
 from google.cloud import storage, bigquery
 from decimal import Decimal
 

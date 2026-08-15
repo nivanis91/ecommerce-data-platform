@@ -1,2 +1,9 @@
 .env
 ecommerce-data-platform-gcp-key.json
+
+# Airflow
+logs/
+
+# Python
+__pycache__/
+*.py[cod]

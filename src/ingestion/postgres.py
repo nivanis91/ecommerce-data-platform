@@ -1,5 +1,5 @@
 import pandas as pd
-from config.connections import get_postgres_connection
+from src.config.connections import get_postgres_connection
 from decimal import Decimal
 
 
