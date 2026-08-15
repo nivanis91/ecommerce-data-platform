@@ -36,8 +36,10 @@ services:
       airflow-init:
         condition: service_completed_successfully
     environment:
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
     volumes:
       - ./simple_auth_manager_passwords.json.generated:/opt/airflow/simple_auth_manager_passwords.json.generated
       - ./dags:/opt/airflow/dags
@@ -54,6 +56,8 @@ services:
       airflow-init:
         condition: service_completed_successfully
     environment:
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       PYTHONPATH: /opt/airflow/project
@@ -63,6 +67,10 @@ services:
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
       GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/project/ecommerce-data-platform-gcp-key.json
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./simple_auth_manager_passwords.json.generated:/opt/airflow/simple_auth_manager_passwords.json.generated
       - ./ecommerce-data-platform-gcp-key.json:/opt/airflow/project/ecommerce-data-platform-gcp-key.json:ro
@@ -81,6 +89,7 @@ services:
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
       PYTHONPATH: /opt/airflow/project
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -88,6 +97,10 @@ services:
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
       GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/project/ecommerce-data-platform-gcp-key.json
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./simple_auth_manager_passwords.json.generated:/opt/airflow/simple_auth_manager_passwords.json.generated
       - ./ecommerce-data-platform-gcp-key.json:/opt/airflow/project/ecommerce-data-platform-gcp-key.json:ro
