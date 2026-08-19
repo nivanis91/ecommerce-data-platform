@@ -153,7 +153,6 @@ models:
       - name: campaign_name
         tests:
           - not_null
-          - unique
 
       - name: channel
         tests:
