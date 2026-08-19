@@ -13,10 +13,16 @@ models:
       - name: customer_id
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
 
       - name: store_id
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_stores')
+              field: store_id
 
       - name: order_date
         tests:
@@ -87,10 +93,16 @@ models:
       - name: order_id
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
 
       - name: product_id
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_id
 
       - name: quantity
         tests:
@@ -116,6 +128,11 @@ models:
       - name: city
         tests:
           - not_null
+          - accepted_values:
+              values:
+                - Niš
+                - Belgrade
+                - Novi Sad
 
       - name: country
         tests:
@@ -141,6 +158,14 @@ models:
       - name: channel
         tests:
           - not_null
+          - accepted_values:
+              values:
+                - Email
+                - Social Media
+                - Google Ads
+                - Facebook
+                - Instagram
+                - TV
 
       - name: city
         tests:
@@ -168,6 +193,11 @@ models:
       - name: location
         tests:
           - not_null
+          - accepted_values:
+              values:
+                - Niš
+                - Belgrade
+                - Novi Sad
 
       - name: timestamp
         tests:
