@@ -1,0 +1,15 @@
+version: 1
+
+sources:
+  - name: raw
+    database: ecommerce-data-platform-505412
+    schema: raw
+
+    tables:
+      - name: customers
+      - name: marketing_campaigns
+      - name: order_items
+      - name: orders
+      - name: products
+      - name: stores
+      - name: weather
