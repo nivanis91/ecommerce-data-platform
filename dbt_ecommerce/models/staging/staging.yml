@@ -1,0 +1,190 @@
+version: 1
+
+models:
+
+  - name: stg_orders
+    description: "Staging model for orders."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        tests:
+          - not_null
+
+      - name: store_id
+        tests:
+          - not_null
+
+      - name: order_date
+        tests:
+          - not_null
+
+      - name: status
+        tests:
+          - not_null
+
+  - name: stg_customers
+    description: "Staging model for customers."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+      - name: first_name
+        tests:
+          - not_null
+
+      - name: last_name
+        tests:
+          - not_null
+
+      - name: email
+        tests:
+          - not_null
+          - unique
+      
+      - name: city
+        tests:
+          - not_null
+
+      - name: country
+        tests:
+          - not_null
+
+  - name: stg_products
+    description: "Staging model for products."
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+
+      - name: product_name
+        tests:
+          - not_null
+          - unique
+
+      - name: category
+        tests:
+          - not_null
+
+      - name: unit_price
+        tests:
+          - not_null
+
+  - name: stg_order_items
+    description: "Staging model for order items."
+    columns:
+      - name: order_item_id
+        tests:
+          - not_null
+          - unique
+
+      - name: order_id
+        tests:
+          - not_null
+
+      - name: product_id
+        tests:
+          - not_null
+
+      - name: quantity
+        tests:
+          - not_null
+
+      - name: unit_price
+        tests:
+          - not_null
+
+  - name: stg_stores
+    description: "Staging model for stores."
+    columns:
+      - name: store_id
+        tests:
+          - not_null
+          - unique
+
+      - name: store_name
+        tests:
+          - not_null
+          - unique
+
+      - name: city
+        tests:
+          - not_null
+
+      - name: country
+        tests:
+          - not_null
+
+      - name: opened_at
+        tests:
+          - not_null
+
+  - name: stg_marketing_campaigns
+    description: "Staging model for marketing campaigns."
+    columns:
+      - name: campaign_id
+        tests:
+          - not_null
+          - unique
+
+      - name: campaign_name
+        tests:
+          - not_null
+          - unique
+
+      - name: channel
+        tests:
+          - not_null
+
+      - name: city
+        tests:
+          - not_null
+
+      - name: start_date
+        tests:
+          - not_null
+
+      - name: end_date
+        tests:
+          - not_null
+
+      - name: budget
+        tests:
+          - not_null
+
+      - name: spend
+        tests:
+          - not_null
+
+  - name: stg_weather
+    description: "Staging model for weather observations."
+    columns:
+      - name: location
+        tests:
+          - not_null
+
+      - name: timestamp
+        tests:
+          - not_null
+
+      - name: temperature_2m
+        tests:
+          - not_null
+
+      - name: relative_humidity_2m
+        tests:
+          - not_null
+
+      - name: precipitation
+        tests:
+          - not_null
+
+      - name: wind_speed_10m
+        tests:
+          - not_null
