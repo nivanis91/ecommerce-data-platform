@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: "Order-item fact table containing one row per order item."
+
+    columns:
+      - name: order_item_id
+        description: "Unique identifier for an order item."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: order_id
+        description: "Source order identifier."
+        data_tests:
+          - not_null
+
+      - name: customer_key
+        description: "Foreign key to dim_customers."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+
+      - name: product_key
+        description: "Foreign key to dim_products."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_key
+
+      - name: store_key
+        description: "Foreign key to dim_stores."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_stores')
+              field: store_key
+
+      - name: date_key
+        description: "Foreign key to dim_date."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+      - name: quantity
+        description: "Number of units purchased."
+        data_tests:
+          - not_null
+
+      - name: unit_price
+        description: "Price per unit."
+        data_tests:
+          - not_null
+
+      - name: sales_amount
+        description: "Total sales amount for the order item."
+        data_tests:
+          - not_null
