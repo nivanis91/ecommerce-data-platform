@@ -81,11 +81,15 @@ models:
       - name: budget
         data_tests:
           - not_null
-
+          - dbt_utils.accepted_range:
+              min_value: 0
+  
       - name: spend
         data_tests:
           - not_null
-
+          - dbt_utils.accepted_range:
+              min_value: 0
+              
   - name: dim_date
     description: "Calendar dimension containing one row per calendar date."
 
