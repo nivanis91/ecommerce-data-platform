@@ -1,6 +1,34 @@
 version: 2
 
 models:
+  - name: fct_weather
+    description: "Weather observations by location and timestamp."
+
+    columns:
+      - name: location
+        data_tests:
+          - not_null
+
+      - name: timestamp
+        data_tests:
+          - not_null
+
+      - name: temperature_2m
+        data_tests:
+          - not_null
+
+      - name: relative_humidity_2m
+        data_tests:
+          - not_null
+
+      - name: precipitation
+        data_tests:
+          - not_null
+
+      - name: wind_speed_10m
+        data_tests:
+          - not_null
+
   - name: fct_orders
     description: "Order-item fact table containing one row per order item."
 

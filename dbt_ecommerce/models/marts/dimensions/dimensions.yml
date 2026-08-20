@@ -1,6 +1,58 @@
-version: 1
+version: 2
 
 models:
+  - name: dim_campaigns
+    description: "Campaign dimension containing marketing campaign attributes."
+
+    columns:
+      - name: campaign_key
+        description: "Surrogate key for the campaign dimension."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: campaign_id
+        description: "Natural key from the source marketing campaign system."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: campaign_name
+        data_tests:
+          - not_null
+
+      - name: channel
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Email
+                - Social Media
+                - Google Ads
+                - Facebook
+                - Instagram
+                - TV
+
+      - name: city
+        data_tests:
+          - not_null
+
+      - name: start_date
+        data_tests:
+          - not_null
+
+      - name: end_date
+        data_tests:
+          - not_null
+
+      - name: budget
+        data_tests:
+          - not_null
+
+      - name: spend
+        data_tests:
+          - not_null
+
   - name: dim_date
     description: "Calendar dimension containing one row per calendar date."
 
