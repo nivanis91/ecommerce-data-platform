@@ -1,6 +1,39 @@
 version: 2
 
 models:
+  - name: dim_location
+    description: "Dimension table containing location-level attributes."
+
+    columns:
+      - name: location_key
+        description: "Surrogate key generated from the city name."
+        tests:
+          - not_null
+          - unique
+
+      - name: city
+        description: "City name."
+        tests:
+          - not_null
+          - unique
+
+      - name: country
+        description: "Country where the city is located."
+        tests:
+          - not_null
+
+      - name: population
+        description: "Population of the city."
+
+      - name: avg_income
+        description: "Average income for the city."
+
+      - name: latitude
+        description: "Latitude coordinate of the city."
+
+      - name: longitude
+        description: "Longitude coordinate of the city."
+
   - name: dim_campaigns
     description: "Campaign dimension containing marketing campaign attributes."
 
