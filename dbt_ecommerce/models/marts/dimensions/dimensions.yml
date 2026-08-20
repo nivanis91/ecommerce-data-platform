@@ -66,7 +66,7 @@ models:
                 - Instagram
                 - TV
 
-      - name: city
+      - name: location_key
         data_tests:
           - not_null
 
@@ -138,11 +138,7 @@ models:
           - not_null
           - unique
 
-      - name: city
-        data_tests:
-          - not_null
-
-      - name: country
+      - name: location_key
         data_tests:
           - not_null
 

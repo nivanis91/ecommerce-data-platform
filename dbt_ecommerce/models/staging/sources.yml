@@ -13,3 +13,4 @@ sources:
       - name: products
       - name: stores
       - name: weather
+      - name: locations

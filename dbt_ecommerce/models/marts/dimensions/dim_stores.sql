@@ -6,10 +6,14 @@
 
 SELECT
     FARM_FINGERPRINT(CAST(store_id AS STRING)) AS store_key,
-    store_id,
-    store_name,
-    city,
-    country,
-    opened_at
+    s.store_id,
+    s.store_name,
 
-FROM {{ ref('stg_stores') }}
+    l.location_key,
+
+    s.opened_at
+
+FROM {{ ref('stg_stores') }} AS s
+
+LEFT JOIN {{ ref('dim_location') }} AS l
+    ON s.city = l.city

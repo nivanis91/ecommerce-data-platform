@@ -1,7 +1,32 @@
 version: 2
 
 models:
+  - name: stg_locations
+    description: "Staging model for location data."
 
+    columns:
+      - name: city
+        description: "City name."
+        tests:
+          - not_null
+
+      - name: country
+        description: "Country where the city is located."
+        tests:
+          - not_null
+
+      - name: population
+        description: "Population of the city."
+
+      - name: avg_income
+        description: "Average income for the city."
+
+      - name: latitude
+        description: "Latitude coordinate of the city."
+
+      - name: longitude
+        description: "Longitude coordinate of the city."
+        
   - name: stg_orders
     description: "Staging model for orders."
     columns:

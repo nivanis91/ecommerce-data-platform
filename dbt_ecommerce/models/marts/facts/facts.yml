@@ -5,7 +5,7 @@ models:
     description: "Weather observations by location and timestamp."
 
     columns:
-      - name: location
+      - name: location_key
         data_tests:
           - not_null
 
