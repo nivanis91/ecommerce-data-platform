@@ -29,7 +29,7 @@ def load_dataframe_to_bigquery(df, table_id):
 from google.cloud import bigquery
 
 
-def merge_dataframe_to_bigquery(df, table_id, merge_key):
+def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     client = bigquery.Client()
 
     temp_table_id = f"{table_id}_temp"
@@ -51,9 +51,14 @@ def merge_dataframe_to_bigquery(df, table_id, merge_key):
 
     update_columns = [
         column for column in columns
-        if column != merge_key
+        if column not in merge_keys
     ]
 
+    merge_condition = " AND ".join(
+        f"target.{key} = source.{key}"
+        for key in merge_keys
+    )
+    
     update_set = ", ".join(
         f"target.{column} = source.{column}"
         for column in update_columns
@@ -69,7 +74,7 @@ def merge_dataframe_to_bigquery(df, table_id, merge_key):
     merge_query = f"""
         MERGE `{table_id}` AS target
         USING `{temp_table_id}` AS source
-        ON target.{merge_key} = source.{merge_key}
+        ON {merge_condition}
 
         WHEN MATCHED THEN
             UPDATE SET {update_set}
@@ -109,7 +114,17 @@ def run_weather_ingestion():
 
     result = pd.concat(dfs, ignore_index=True)
 
-    load_dataframe_to_bigquery(result, "raw.weather")
+    datetime_columns = result.select_dtypes(
+        include=["datetime", "datetimetz"]
+    ).columns
+
+    for column in datetime_columns:
+        result[column] = pd.to_datetime(
+            result[column],
+            utc=True
+    )
+            
+    merge_dataframe_to_bigquery(result, "raw.weather", ['location', 'timestamp'])
 
     return result 
 
@@ -212,11 +227,11 @@ def ingest_table_idempotent(extract_function, bq_table, merge_key):
         conn.close()
 
 def run_postgres_ingestion():
-    ingest_table_idempotent(extract_customers, "raw.customers", 'customer_id')
-    ingest_table_idempotent(extract_stores, "raw.stores", 'store_id')
-    ingest_table_idempotent(extract_orders, "raw.orders", 'order_id')
-    ingest_table_idempotent(extract_products, "raw.products", 'product_id')
-    ingest_table_idempotent(extract_order_items, "raw.order_items", 'order_item_id')
+    ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'])
+    ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'])
+    ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'])
+    ingest_table_idempotent(extract_products, "raw.products", ['product_id'])
+    ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'])
     
 if __name__ == "__main__":
     #run_weather_ingestion()

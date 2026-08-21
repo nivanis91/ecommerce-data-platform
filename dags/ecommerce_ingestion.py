@@ -21,12 +21,12 @@ with DAG(
         task_id="postgres_ingestion",
         python_callable=run_postgres_ingestion,
     )
-'''
+
     weather_ingestion = PythonOperator(
         task_id="weather_ingestion",
         python_callable=run_weather_ingestion,
     )
-
+'''
     marketing_ingestion = PythonOperator(
         task_id="marketing_csv_ingestion",
         python_callable=run_marketing_csv_ingestion,
