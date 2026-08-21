@@ -180,7 +180,7 @@ def run_marketing_csv_ingestion():
 
     df = clean_marketing_data_frame_before_db_upload(all_files_data_frame)
    
-    load_dataframe_to_bigquery(df, 'raw.marketing_campaigns')
+    merge_dataframe_to_bigquery(df, 'raw.marketing_campaigns', ['campaign_id'])
 
 def run_get_data_from_gcp():
     client = storage.Client()
