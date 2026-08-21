@@ -318,6 +318,12 @@ def ingest_table_idempotent(
 
         merge_dataframe_to_bigquery(df, bq_table, merge_keys)
 
+        print(f"\n{'=' * 60}")
+        print(f"Table: {bq_table}")
+        print(f"Watermark: {watermark}")
+        print(f"Rows extracted: {len(df)}")
+        print(f"\n{'=' * 60}")
+
         if len(df) > 0:
             new_watermark = df[watermark_colum_name].max()
 
@@ -340,8 +346,8 @@ def ingest_table_idempotent(
 
 def run_postgres_ingestion():
     ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'], "updated_at")
-    #ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
-    #ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
+    ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
+    ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
     #ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
     #ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
     

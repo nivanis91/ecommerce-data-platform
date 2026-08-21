@@ -14,30 +14,55 @@ def get_order_date_range(conn):
 
     return pd.read_sql(query, conn)
 
-def extract_stores(conn):
+def extract_stores(
+        conn, 
+        last_watermark=None
+    ):
+
+    if last_watermark is None:
+            last_watermark = datetime.now() - timedelta(days=365 * 100)
+
     query = """
         SELECT *
         FROM stores
+        WHERE opened_at >= %(last_watermark)s
     """
 
     return pd.read_sql(
         query,
-        conn
+        conn,
+        params={
+            "last_watermark": last_watermark
+        }
     )
 
-def extract_customers(conn):
+def extract_customers(
+        conn, 
+        last_watermark=None
+    ):
+
+    if last_watermark is None:
+            last_watermark = datetime.now() - timedelta(days=365 * 100)
+    
     query = """
         SELECT *
         FROM customers
+        WHERE created_at >= %(last_watermark)s
     """
 
     return pd.read_sql(
         query,
-        conn
+        conn,
+        params={
+            "last_watermark": last_watermark
+        }
     )
 
 
-def extract_orders(conn, last_watermark=None):
+def extract_orders(
+        conn, 
+        last_watermark=None
+    ):
 
     if last_watermark is None:
         last_watermark = datetime.now() - timedelta(days=365 * 100)
