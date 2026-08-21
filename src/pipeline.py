@@ -160,14 +160,25 @@ def clean_marketing_data_frame_before_db_upload(all_files_data_frame):
     return df
 
 def run_marketing_csv_ingestion():
+    table_name = 'raw.marketing_campaigns'
+
+    watermark = get_watermark(table_name)
+    if watermark is None:
+        watermark = '19990101'
+
     s3 = get_s3_client()
 
     files = list_files(s3)
 
+    files = [
+        file for file in files
+        if file.removesuffix('.csv').split('_')[-1] >= watermark
+    ]
+
     files_array = []
     all_files_data_frame = pd.DataFrame()
 
-    print("Files:")
+    print("Files to load:")
     for file in files:
         print(file)
         loaded_csv = load_csv(
@@ -181,7 +192,16 @@ def run_marketing_csv_ingestion():
 
     df = clean_marketing_data_frame_before_db_upload(all_files_data_frame)
    
-    merge_dataframe_to_bigquery(df, 'raw.marketing_campaigns', ['campaign_id'])
+    merge_dataframe_to_bigquery(df, table_name, ['campaign_id'])
+
+    if len(df) > 0:
+        new_watermark = max(file.removesuffix(".csv").split("_")[-1] for file in files)
+
+        if int(new_watermark) > int(watermark):
+            update_watermark(
+                table_name,
+                str(new_watermark)
+            )
 
 def run_get_data_from_gcp():
     client = storage.Client()
