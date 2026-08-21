@@ -81,15 +81,26 @@ def extract_orders(
         }
     )
 
-def extract_order_items(conn):
+def extract_order_items(
+        conn, 
+        last_watermark=None
+    ):
+
+    if last_watermark is None:
+        last_watermark = 0
+            
     query = """
         SELECT *
         FROM order_items
+        WHERE order_item_id >= %(last_watermark)s
     """
 
     df = pd.read_sql(
         query,
-        conn
+        conn,
+        params={
+            "last_watermark": last_watermark
+        }
     )
 
     df["unit_price"] = df["unit_price"].apply(

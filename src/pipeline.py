@@ -340,7 +340,7 @@ def ingest_table_idempotent(
 
                 else:
                     watermark = type(new_watermark)(watermark)
-                    
+
                 if new_watermark > watermark:
                     update_watermark(
                         bq_table,
@@ -355,7 +355,7 @@ def run_postgres_ingestion():
     ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
     ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
     ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
-    #ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
+    ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
     
 if __name__ == "__main__":
     #run_weather_ingestion()
