@@ -26,6 +26,64 @@ def load_dataframe_to_bigquery(df, table_id):
 
     print(f"Loaded {len(df)} rows into {table_id}")
 
+from google.cloud import bigquery
+
+
+def merge_dataframe_to_bigquery(df, table_id, merge_key):
+    client = bigquery.Client()
+
+    temp_table_id = f"{table_id}_temp"
+
+    job_config = bigquery.LoadJobConfig(
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE
+    )
+
+    job = client.load_table_from_dataframe(
+        df,
+        temp_table_id,
+        job_config=job_config,
+    )
+
+    job.result()
+
+    # 2. Get column name and prepare for query
+    columns = df.columns.tolist()
+
+    update_columns = [
+        column for column in columns
+        if column != merge_key
+    ]
+
+    update_set = ", ".join(
+        f"target.{column} = source.{column}"
+        for column in update_columns
+    )
+
+    insert_columns = ", ".join(columns)
+    insert_values = ", ".join(
+        f"source.{column}"
+        for column in columns
+    )
+
+    # 3. MERGE temporary table into target
+    merge_query = f"""
+        MERGE `{table_id}` AS target
+        USING `{temp_table_id}` AS source
+        ON target.{merge_key} = source.{merge_key}
+
+        WHEN MATCHED THEN
+            UPDATE SET {update_set}
+
+        WHEN NOT MATCHED THEN
+            INSERT ({insert_columns})
+            VALUES ({insert_values})
+    """
+
+    client.query(merge_query).result()
+
+    # 4. Remove temporary table
+    client.delete_table(temp_table_id, not_found_ok=True)
+
 def run_weather_ingestion():
 
     conn = get_postgres_connection()
@@ -133,12 +191,32 @@ def ingest_table(extract_function, bq_table):
     finally:
         conn.close()
 
+def ingest_table_idempotent(extract_function, bq_table, merge_key):
+    conn = get_postgres_connection()
+
+    try:
+        df = extract_function(conn)
+
+        datetime_columns = df.select_dtypes(
+            include=["datetime", "datetimetz"]
+        ).columns
+
+        for column in datetime_columns:
+            df[column] = pd.to_datetime(
+                df[column],
+                utc=True
+        )
+
+        merge_dataframe_to_bigquery(df, bq_table, merge_key)
+    finally:
+        conn.close()
+
 def run_postgres_ingestion():
-    ingest_table(extract_customers, "raw.customers")
-    ingest_table(extract_stores, "raw.stores")
-    ingest_table(extract_orders, "raw.orders")
-    ingest_table(extract_products, "raw.products")
-    ingest_table(extract_order_items, "raw.order_items")
+    ingest_table_idempotent(extract_customers, "raw.customers", 'customer_id')
+    ingest_table_idempotent(extract_stores, "raw.stores", 'store_id')
+    ingest_table_idempotent(extract_orders, "raw.orders", 'order_id')
+    ingest_table_idempotent(extract_products, "raw.products", 'product_id')
+    ingest_table_idempotent(extract_order_items, "raw.order_items", 'order_item_id')
     
 if __name__ == "__main__":
     #run_weather_ingestion()
