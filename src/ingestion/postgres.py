@@ -98,15 +98,26 @@ def extract_order_items(conn):
 
     return df
 
-def extract_products(conn):
+def extract_products(
+        conn, 
+        last_watermark=None
+    ):
+
+    if last_watermark is None:
+            last_watermark = datetime.now() - timedelta(days=365 * 100)
+
     query = """
         SELECT *
         FROM products
+        WHERE created_at >= %(last_watermark)s
     """
     
     df = pd.read_sql(
         query,
-        conn
+        conn,
+        params={
+            "last_watermark": last_watermark
+        }
     )
 
     df["unit_price"] = df["unit_price"].apply(

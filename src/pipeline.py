@@ -6,6 +6,7 @@ from src.ingestion.csv_import import list_files, load_csv
 from src.config.cities import CITIES
 from google.cloud import storage, bigquery
 from decimal import Decimal
+from datetime import date, datetime
 
 import pandas as pd
 
@@ -333,8 +334,13 @@ def ingest_table_idempotent(
                     str(new_watermark)
                 )
             else:
-                watermark = type(new_watermark)(watermark)
+                if isinstance(new_watermark, (pd.Timestamp, date, datetime)):
+                    watermark = pd.to_datetime(watermark)
+                    new_watermark = pd.to_datetime(new_watermark)
 
+                else:
+                    watermark = type(new_watermark)(watermark)
+                    
                 if new_watermark > watermark:
                     update_watermark(
                         bq_table,
@@ -348,7 +354,7 @@ def run_postgres_ingestion():
     ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'], "updated_at")
     ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
     ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
-    #ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
+    ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
     #ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
     
 if __name__ == "__main__":
