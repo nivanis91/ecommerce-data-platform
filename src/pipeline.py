@@ -94,14 +94,20 @@ def run_weather_ingestion():
 
     conn = get_postgres_connection()
 
+    table_name = 'raw.weather'
+    watermark = get_watermark(table_name)
+
+    if watermark is None:
+        watermark = 0
+
     try:
-        dates = get_order_date_range(conn).iloc[0]
+        dates = get_order_date_range(conn, watermark).iloc[0]
     finally:
         conn.close()
 
     start_date = dates["start_date"].strftime("%Y-%m-%d")
     end_date = dates["end_date"].strftime("%Y-%m-%d")
-
+    
     dfs = []
 
     for city in CITIES:
@@ -126,6 +132,15 @@ def run_weather_ingestion():
     )
             
     merge_dataframe_to_bigquery(result, "raw.weather", ['location', 'timestamp'])
+
+    if len(result) > 0:
+        new_watermark = dates['max_id_for_range']
+
+        if int(new_watermark) > int(watermark):
+            update_watermark(
+                table_name,
+                str(new_watermark)
+            )
 
     return result 
 

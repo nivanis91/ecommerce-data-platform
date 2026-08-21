@@ -4,15 +4,26 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 
 
-def get_order_date_range(conn):
+def get_order_date_range(
+          conn, 
+          last_order_id
+    ):
     query = """
         SELECT
             MIN(order_date) AS start_date,
-            MAX(order_date) AS end_date
+            MAX(order_date) AS end_date,
+            MAX(order_id) as max_id_for_range
         FROM orders
+        WHERE order_id >= %(last_order_id)s
     """
 
-    return pd.read_sql(query, conn)
+    return pd.read_sql(
+         query, 
+         conn,
+         params={
+            "last_order_id": last_order_id
+        }
+        )
 
 def extract_stores(
         conn, 
