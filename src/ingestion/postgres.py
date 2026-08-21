@@ -1,6 +1,7 @@
 import pandas as pd
 from src.config.connections import get_postgres_connection
 from decimal import Decimal
+from datetime import datetime, timedelta
 
 
 def get_order_date_range(conn):
@@ -35,15 +36,24 @@ def extract_customers(conn):
         conn
     )
 
-def extract_orders(conn):
+
+def extract_orders(conn, last_watermark=None):
+
+    if last_watermark is None:
+        last_watermark = datetime.now() - timedelta(days=365 * 100)
+
     query = """
         SELECT *
         FROM orders
+        WHERE updated_at >= %(last_watermark)s
     """
 
     return pd.read_sql(
         query,
-        conn
+        conn,
+        params={
+            "last_watermark": last_watermark
+        }
     )
 
 def extract_order_items(conn):

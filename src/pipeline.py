@@ -206,11 +206,105 @@ def ingest_table(extract_function, bq_table):
     finally:
         conn.close()
 
-def ingest_table_idempotent(extract_function, bq_table, merge_key):
+def get_watermark(table_name):
+    client = bigquery.Client()
+
+    query = """
+        SELECT watermark_value
+        FROM `raw.pipeline_metadata`
+        WHERE table_name = @table_name
+        LIMIT 1
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter(
+                "table_name",
+                "STRING",
+                table_name
+            )
+        ]
+    )
+
+    result = client.query(
+        query,
+        job_config=job_config
+    ).result()
+
+    row = next(iter(result), None)
+
+    if row is None:
+        return None
+
+    return row.watermark_value
+
+def update_watermark(table_name, watermark_value):
+    client = bigquery.Client()
+
+    query = """
+        MERGE `ecommerce-data-platform-505412.raw.pipeline_metadata` AS target
+
+        USING (
+            SELECT
+                @table_name AS table_name,
+                @watermark_value AS watermark_value,
+                CURRENT_TIMESTAMP() AS completed_at
+        ) AS source
+
+        -- matching is done by table name, as we are using only record of the latest successfull run 
+        ON target.table_name = source.table_name
+
+        WHEN MATCHED THEN
+            UPDATE SET
+                target.watermark_value = source.watermark_value,
+                target.completed_at = source.completed_at
+
+        WHEN NOT MATCHED THEN
+            INSERT (
+                table_name,
+                watermark_value,
+                completed_at
+            )
+            VALUES (
+                source.table_name,
+                source.watermark_value,
+                source.completed_at
+            )
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter(
+                "table_name",
+                "STRING",
+                table_name
+            ),
+            bigquery.ScalarQueryParameter(
+                "watermark_value",
+                "STRING",
+                watermark_value
+            ),
+        ]
+    )
+
+    client.query(
+        query,
+        job_config=job_config
+    ).result()
+
+def ingest_table_idempotent(
+        extract_function, 
+        bq_table, 
+        merge_keys,
+        watermark_colum_name=None
+    ):
     conn = get_postgres_connection()
 
     try:
-        df = extract_function(conn)
+        watermark = get_watermark(bq_table)
+        print('Watermark value: ')
+        print(watermark)
+        df = extract_function(conn, watermark)
 
         datetime_columns = df.select_dtypes(
             include=["datetime", "datetimetz"]
@@ -222,16 +316,34 @@ def ingest_table_idempotent(extract_function, bq_table, merge_key):
                 utc=True
         )
 
-        merge_dataframe_to_bigquery(df, bq_table, merge_key)
+        merge_dataframe_to_bigquery(df, bq_table, merge_keys)
+
+        if len(df) > 0:
+            new_watermark = df[watermark_colum_name].max()
+
+            if watermark is None:
+                update_watermark(
+                    bq_table,
+                    str(new_watermark)
+                )
+            else:
+                watermark = type(new_watermark)(watermark)
+
+                if new_watermark > watermark:
+                    update_watermark(
+                        bq_table,
+                        str(new_watermark)
+                    )
+
     finally:
         conn.close()
 
 def run_postgres_ingestion():
-    ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'])
-    ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'])
-    ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'])
-    ingest_table_idempotent(extract_products, "raw.products", ['product_id'])
-    ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'])
+    ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'], "updated_at")
+    #ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
+    #ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
+    #ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
+    #ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
     
 if __name__ == "__main__":
     #run_weather_ingestion()
