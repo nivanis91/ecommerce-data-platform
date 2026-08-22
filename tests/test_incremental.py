@@ -128,3 +128,25 @@ def test_dont_update_existing_watermark_when_new_rows_match_watermark(
 
     mock_update_watermark.assert_not_called()
 
+
+def test_create_watermark_when_there_was_none(
+    df,
+    fake_extract,
+    updated_watermark,
+    mock_pipeline,
+    monkeypatch
+):
+    monkeypatch.setattr(
+        "src.pipeline.get_watermark",
+        lambda table: None
+    )
+
+    ingest_table_idempotent(
+        extract_function=fake_extract,
+        bq_table="raw.orders",
+        merge_keys=["order_id"],
+        watermark_colum_name="updated_at"
+    )
+
+    assert updated_watermark["table"] == "raw.orders"
+    assert updated_watermark["watermark"] == str(df["updated_at"].max())
