@@ -13,3 +13,4 @@ apache-airflow-providers-amazon
 apache-airflow-providers-google
 
 dbt-bigquery
+pytest
