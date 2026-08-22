@@ -60,4 +60,4 @@ def test_incremental_load(monkeypatch):
     )
 
     assert updated_watermark["table"] == "raw.orders"
-    assert updated_watermark["watermark"] == "2026-08-21 11:00:00+00:00"
+    assert updated_watermark["watermark"] == str(df['updated_at'].max())
