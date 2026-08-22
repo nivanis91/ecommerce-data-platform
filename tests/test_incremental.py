@@ -2,10 +2,15 @@ import pandas as pd
 
 from src.pipeline import ingest_table_idempotent
 
+import pandas as pd
+import pytest
 
-def test_incremental_load(monkeypatch):
+from src.pipeline import ingest_table_idempotent
 
-    df = pd.DataFrame({
+
+@pytest.fixture
+def df():
+    return pd.DataFrame({
         "order_id": [101, 102],
         "updated_at": pd.to_datetime([
             "2026-08-21 10:00:00",
@@ -13,35 +18,40 @@ def test_incremental_load(monkeypatch):
         ], utc=True)
     })
 
-    # Mock database connection
+
+@pytest.fixture
+def fake_connection():
     class FakeConnection:
         def close(self):
             pass
 
+    return FakeConnection()
+
+
+@pytest.fixture
+def fake_extract(df):
+    def extract(conn, watermark):
+        return df
+
+    return extract
+
+
+@pytest.fixture
+def updated_watermark():
+    return {}
+
+
+@pytest.fixture
+def mock_pipeline(monkeypatch, fake_connection, updated_watermark):
     monkeypatch.setattr(
         "src.pipeline.get_postgres_connection",
-        lambda: FakeConnection()
+        lambda: fake_connection
     )
 
-    # Mock existing BigQuery watermark
-    monkeypatch.setattr(
-        "src.pipeline.get_watermark",
-        lambda table: "2026-08-21 09:00:00+00:00"
-    )
-
-    # Mock BigQuery merge
     monkeypatch.setattr(
         "src.pipeline.merge_dataframe_to_bigquery",
         lambda df, table, keys: None
     )
-
-    # Fake extraction function
-    def fake_extract(conn, watermark):
-        assert watermark == "2026-08-21 09:00:00+00:00"
-        return df
-
-    # Capture the new watermark
-    updated_watermark = {}
 
     def fake_update_watermark(table, watermark):
         updated_watermark["table"] = table
@@ -52,6 +62,18 @@ def test_incremental_load(monkeypatch):
         fake_update_watermark
     )
 
+def test_incremental_load(
+    df,
+    fake_extract,
+    updated_watermark,
+    mock_pipeline,
+    monkeypatch
+):
+    monkeypatch.setattr(
+        "src.pipeline.get_watermark",
+        lambda table: "2026-08-21 09:00:00+00:00"
+    )
+
     ingest_table_idempotent(
         extract_function=fake_extract,
         bq_table="raw.orders",
@@ -60,4 +82,4 @@ def test_incremental_load(monkeypatch):
     )
 
     assert updated_watermark["table"] == "raw.orders"
-    assert updated_watermark["watermark"] == str(df['updated_at'].max())
+    assert updated_watermark["watermark"] == str(df["updated_at"].max())
