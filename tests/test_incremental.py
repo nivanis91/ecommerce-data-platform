@@ -192,3 +192,41 @@ def test_dont_update_watermark_when_df_is_empty(
     )
 
     mock_update_watermark.assert_not_called()
+
+
+
+def test_dont_update_watermark_when_DB_merge_fails(
+    df,
+    fake_extract,
+    updated_watermark,
+    mock_pipeline,
+    monkeypatch
+):
+    mock_update_watermark = Mock()
+
+    monkeypatch.setattr(
+        "src.pipeline.update_watermark",
+        mock_update_watermark
+    )
+    monkeypatch.setattr(
+        "src.pipeline.get_watermark",
+        lambda table: "2026-08-21 09:00:00+00:00"
+    )
+
+    def failing_merge(df, table, keys):
+        raise Exception("BigQuery merge failed")
+
+    monkeypatch.setattr(
+        "src.pipeline.merge_dataframe_to_bigquery",
+        failing_merge
+    )
+
+    with pytest.raises(Exception, match="BigQuery merge failed"):
+        ingest_table_idempotent(
+            extract_function=fake_extract,
+            bq_table="raw.orders",
+            merge_keys=["order_id"],
+            watermark_colum_name="updated_at"
+        )
+
+    mock_update_watermark.assert_not_called()
