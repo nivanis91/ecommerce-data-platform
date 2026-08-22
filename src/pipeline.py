@@ -337,11 +337,14 @@ def ingest_table_idempotent(
     conn = get_postgres_connection()
 
     try:
-        watermark = get_watermark(bq_table)
-        print('Watermark value: ')
-        print(watermark)
-        df = extract_function(conn, watermark)
+        old_watermark = get_watermark(bq_table)
+        print(f"Old watermark value: {old_watermark}")
 
+        df = extract_function(conn, old_watermark)
+        
+        if df.empty:
+            return
+        
         datetime_columns = df.select_dtypes(
             include=["datetime", "datetimetz"]
         ).columns
@@ -356,31 +359,30 @@ def ingest_table_idempotent(
 
         print(f"\n{'=' * 60}")
         print(f"Table: {bq_table}")
-        print(f"Watermark: {watermark}")
+        print(f"Watermark: {old_watermark}")
         print(f"Rows extracted: {len(df)}")
         print(f"\n{'=' * 60}")
 
-        if len(df) > 0:
-            new_watermark = df[watermark_colum_name].max()
+        new_watermark = df[watermark_colum_name].max()
 
-            if watermark is None:
+        if old_watermark is None:
+            update_watermark(
+                bq_table,
+                str(new_watermark)
+            )
+        else:
+            if isinstance(new_watermark, (pd.Timestamp, date, datetime)):
+                old_watermark = pd.to_datetime(old_watermark)
+                new_watermark = pd.to_datetime(new_watermark)
+
+            else:
+                old_watermark = type(new_watermark)(old_watermark)
+
+            if new_watermark > old_watermark:
                 update_watermark(
                     bq_table,
                     str(new_watermark)
                 )
-            else:
-                if isinstance(new_watermark, (pd.Timestamp, date, datetime)):
-                    watermark = pd.to_datetime(watermark)
-                    new_watermark = pd.to_datetime(new_watermark)
-
-                else:
-                    watermark = type(new_watermark)(watermark)
-
-                if new_watermark > watermark:
-                    update_watermark(
-                        bq_table,
-                        str(new_watermark)
-                    )
 
     finally:
         conn.close()
