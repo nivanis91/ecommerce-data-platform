@@ -62,7 +62,7 @@ def mock_pipeline(monkeypatch, fake_connection, updated_watermark):
         fake_update_watermark
     )
 
-def test_incremental_load(
+def test_update_existing_watermark_when_new_rows_exist(
     df,
     fake_extract,
     updated_watermark,
