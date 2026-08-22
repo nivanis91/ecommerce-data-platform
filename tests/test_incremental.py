@@ -20,6 +20,13 @@ def df():
     })
 
 @pytest.fixture
+def empty_df():
+    return pd.DataFrame({
+        "order_id": [],
+        "updated_at": pd.to_datetime([], utc=True)
+    })
+
+@pytest.fixture
 def no_new_df():
     return pd.DataFrame({
         "order_id": [101, 102],
@@ -49,6 +56,13 @@ def fake_extract(df):
 def fake_extract_no_new(no_new_df):
     def extract(conn, watermark):
         return no_new_df
+
+    return extract
+
+@pytest.fixture
+def fake_extract_empty(empty_df):
+    def extract(conn, watermark):
+        return empty_df
 
     return extract
 
@@ -150,3 +164,31 @@ def test_create_watermark_when_there_was_none(
 
     assert updated_watermark["table"] == "raw.orders"
     assert updated_watermark["watermark"] == str(df["updated_at"].max())
+
+
+def test_dont_update_watermark_when_df_is_empty(
+    empty_df,
+    fake_extract_empty,
+    updated_watermark,
+    mock_pipeline,
+    monkeypatch
+):
+    mock_update_watermark = Mock()
+
+    monkeypatch.setattr(
+        "src.pipeline.update_watermark",
+        mock_update_watermark
+    )
+    monkeypatch.setattr(
+        "src.pipeline.get_watermark",
+        lambda table: "2026-08-21 09:00:00+00:00"
+    )
+
+    ingest_table_idempotent(
+        extract_function=fake_extract_empty,
+        bq_table="raw.orders",
+        merge_keys=["order_id"],
+        watermark_colum_name="updated_at"
+    )
+
+    mock_update_watermark.assert_not_called()
