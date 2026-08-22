@@ -4,6 +4,7 @@ from src.pipeline import ingest_table_idempotent
 
 import pandas as pd
 import pytest
+from unittest.mock import Mock
 
 from src.pipeline import ingest_table_idempotent
 
@@ -18,6 +19,15 @@ def df():
         ], utc=True)
     })
 
+@pytest.fixture
+def no_new_df():
+    return pd.DataFrame({
+        "order_id": [101, 102],
+        "updated_at": pd.to_datetime([
+            "2026-08-21 09:00:00",
+            "2026-08-21 09:00:00"
+        ], utc=True)
+    })
 
 @pytest.fixture
 def fake_connection():
@@ -35,6 +45,12 @@ def fake_extract(df):
 
     return extract
 
+@pytest.fixture
+def fake_extract_no_new(no_new_df):
+    def extract(conn, watermark):
+        return no_new_df
+
+    return extract
 
 @pytest.fixture
 def updated_watermark():
@@ -83,3 +99,32 @@ def test_update_existing_watermark_when_new_rows_exist(
 
     assert updated_watermark["table"] == "raw.orders"
     assert updated_watermark["watermark"] == str(df["updated_at"].max())
+
+
+def test_dont_update_existing_watermark_when_new_rows_match_watermark(
+    no_new_df,
+    fake_extract_no_new,
+    updated_watermark,
+    mock_pipeline,
+    monkeypatch
+):
+    mock_update_watermark = Mock()
+
+    monkeypatch.setattr(
+        "src.pipeline.update_watermark",
+        mock_update_watermark
+    )
+    monkeypatch.setattr(
+        "src.pipeline.get_watermark",
+        lambda table: "2026-08-21 09:00:00+00:00"
+    )
+
+    ingest_table_idempotent(
+        extract_function=fake_extract_no_new,
+        bq_table="raw.orders",
+        merge_keys=["order_id"],
+        watermark_colum_name="updated_at"
+    )
+
+    mock_update_watermark.assert_not_called()
+
