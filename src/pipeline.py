@@ -13,7 +13,15 @@ import time
 import pandas as pd
 
 from google.cloud import bigquery
+from google.api_core import exceptions
 
+RETRYABLE_BIGQUERY_ERRORS = (
+    exceptions.TooManyRequests,       # 429
+    exceptions.InternalServerError,   # 500
+    exceptions.BadGateway,            # 502
+    exceptions.ServiceUnavailable,    # 503
+    exceptions.DeadlineExceeded,      # timeout
+)
 
 def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     client = bigquery.Client()
@@ -81,7 +89,7 @@ def retry_bigquery_operation(operation, max_attempts=3):
     for current_attempt in range(max_attempts):
         try:
             return operation()
-        except:
+        except RETRYABLE_BIGQUERY_ERRORS:
             if current_attempt == max_attempts - 1:
                 raise
 
