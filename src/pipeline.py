@@ -79,17 +79,23 @@ def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     """
 
     try:
-        retry_bigquery_operation(
-            lambda: client.query(merge_query).result()
+        retry_operation(
+            lambda: client.query(merge_query).result(),
+            RETRYABLE_BIGQUERY_ERRORS
         )
     finally:
         client.delete_table(temp_table_id, not_found_ok=True)
 
-def retry_bigquery_operation(operation, max_attempts=3):
+def retry_operation(
+        operation, 
+        retryable_exceptions, 
+        max_attempts=3
+    ):
+    
     for current_attempt in range(max_attempts):
         try:
             return operation()
-        except RETRYABLE_BIGQUERY_ERRORS:
+        except retryable_exceptions:
             if current_attempt == max_attempts - 1:
                 raise
 
