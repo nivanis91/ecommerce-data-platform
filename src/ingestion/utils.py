@@ -34,14 +34,17 @@ def retry_operation(
     for current_attempt in range(max_attempts):
         try:
             return operation()
-        except should_retry:
+        except Exception as exc:
+            print(exc)
+            if not should_retry(exc):
+                raise
             if current_attempt == max_attempts - 1:
                 raise
 
             # Double the wait time, afer each failed attempt
             wait_time = 2 ** current_attempt
             print(
-                f"BigQuery operation failed. "
+                f"Operation failed. "
                 f"Retrying in {wait_time}s..."
             )
             time.sleep(wait_time)
