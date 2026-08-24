@@ -1,5 +1,7 @@
 import time
 import requests
+import psycopg2
+from google.api_core import exceptions
 
 RETRYABLE_HTTP_STATUS_CODES = {
     429,
@@ -10,6 +12,18 @@ RETRYABLE_HTTP_STATUS_CODES = {
 }
 
 RETRYABLE_WEATHER_STATUS_CODES = RETRYABLE_HTTP_STATUS_CODES
+
+RETRYABLE_POSTGRES_ERRORS = (
+    psycopg2.OperationalError,
+)
+
+RETRYABLE_BIGQUERY_ERRORS = (
+    exceptions.TooManyRequests,       # 429
+    exceptions.InternalServerError,   # 500
+    exceptions.BadGateway,            # 502
+    exceptions.ServiceUnavailable,    # 503
+    exceptions.DeadlineExceeded,      # timeout
+)
 
 def retry_operation(
         operation, 
@@ -45,3 +59,13 @@ def should_retry_weather(exc):
             requests.ConnectionError,
         )
     )
+
+should_retry_postgres = lambda exc: isinstance(
+            exc,
+            RETRYABLE_POSTGRES_ERRORS
+        )
+
+should_retry_bigquery = lambda exc: isinstance(
+            exc,
+            RETRYABLE_BIGQUERY_ERRORS
+        )

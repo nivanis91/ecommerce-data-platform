@@ -7,25 +7,11 @@ from src.config.cities import CITIES
 from google.cloud import storage, bigquery
 from decimal import Decimal
 from datetime import date, datetime
-from src.ingestion.utils import retry_operation
+from src.ingestion.utils import retry_operation, should_retry_postgres, should_retry_bigquery
 
 import pandas as pd
 
 from google.cloud import bigquery
-from google.api_core import exceptions
-import psycopg2
-
-RETRYABLE_BIGQUERY_ERRORS = (
-    exceptions.TooManyRequests,       # 429
-    exceptions.InternalServerError,   # 500
-    exceptions.BadGateway,            # 502
-    exceptions.ServiceUnavailable,    # 503
-    exceptions.DeadlineExceeded,      # timeout
-)
-
-RETRYABLE_POSTGRES_ERRORS = (
-    psycopg2.OperationalError,
-)
 
 def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     client = bigquery.Client()
@@ -85,10 +71,7 @@ def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     try:
         retry_operation(
             lambda: client.query(merge_query).result(),
-            lambda exc: isinstance(
-                exc,
-                RETRYABLE_BIGQUERY_ERRORS
-            )
+            should_retry_bigquery
         )
     finally:
         client.delete_table(temp_table_id, not_found_ok=True)
@@ -328,10 +311,7 @@ def ingest_table_idempotent(
     ):
     conn = retry_operation(
         get_postgres_connection,
-        lambda exc: isinstance(
-            exc,
-            RETRYABLE_POSTGRES_ERRORS
-        )
+        should_retry_postgres
     )
 
     try:
