@@ -1,6 +1,8 @@
-import requests
+
 import pandas as pd
 from src.config.cities import CITIES
+from src.ingestion.utils import retry_operation, should_retry_weather
+import requests
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
@@ -19,7 +21,11 @@ def fetch_weather(latitude, longitude, start_date, end_date):
         "timezone": "auto",
     }
 
-    response = requests.get(BASE_URL, params=params)
+    response = requests.get(
+        BASE_URL, 
+        params=params,
+        timeout=10,
+    )
 
     response.raise_for_status()
 
@@ -37,7 +43,6 @@ def parse_weather(data, location):
     df = df.drop(columns=["time"])
 
     return df
-
 
 def get_weather(city, start_date, end_date):
     data = fetch_weather(
@@ -57,10 +62,13 @@ if __name__ == "__main__":
     all_weather = pd.DataFrame()
 
     for city in CITIES:
-        df = get_weather(
-            city=city,
-            start_date="2026-08-01",
-            end_date="2026-08-12",
+        df = retry_operation(
+            get_weather(
+                city=city,
+                start_date="2026-08-01",
+                end_date="2026-08-12",
+            ),
+            should_retry_weather
         )
 
         all_weather = pd.concat([all_weather, df], ignore_index=True)

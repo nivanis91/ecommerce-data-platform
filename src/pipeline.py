@@ -7,8 +7,7 @@ from src.config.cities import CITIES
 from google.cloud import storage, bigquery
 from decimal import Decimal
 from datetime import date, datetime
-
-import time
+from src.ingestion.utils import retry_operation
 
 import pandas as pd
 
@@ -86,31 +85,13 @@ def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     try:
         retry_operation(
             lambda: client.query(merge_query).result(),
-            RETRYABLE_BIGQUERY_ERRORS
+            lambda exc: isinstance(
+                exc,
+                RETRYABLE_BIGQUERY_ERRORS
+            )
         )
     finally:
         client.delete_table(temp_table_id, not_found_ok=True)
-
-def retry_operation(
-        operation, 
-        retryable_exceptions, 
-        max_attempts=3
-    ):
-
-    for current_attempt in range(max_attempts):
-        try:
-            return operation()
-        except retryable_exceptions:
-            if current_attempt == max_attempts - 1:
-                raise
-
-            # Double the wait time, afer each failed attempt
-            wait_time = 2 ** current_attempt
-            print(
-                f"BigQuery operation failed. "
-                f"Retrying in {wait_time}s..."
-            )
-            time.sleep(wait_time)
 
 def run_weather_ingestion():
 
@@ -347,7 +328,10 @@ def ingest_table_idempotent(
     ):
     conn = retry_operation(
         get_postgres_connection,
-        RETRYABLE_POSTGRES_ERRORS
+        lambda exc: isinstance(
+            exc,
+            RETRYABLE_POSTGRES_ERRORS
+        )
     )
 
     try:
