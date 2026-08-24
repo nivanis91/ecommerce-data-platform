@@ -14,6 +14,7 @@ import pandas as pd
 
 from google.cloud import bigquery
 from google.api_core import exceptions
+import psycopg2
 
 RETRYABLE_BIGQUERY_ERRORS = (
     exceptions.TooManyRequests,       # 429
@@ -21,6 +22,10 @@ RETRYABLE_BIGQUERY_ERRORS = (
     exceptions.BadGateway,            # 502
     exceptions.ServiceUnavailable,    # 503
     exceptions.DeadlineExceeded,      # timeout
+)
+
+RETRYABLE_POSTGRES_ERRORS = (
+    psycopg2.OperationalError,
 )
 
 def merge_dataframe_to_bigquery(df, table_id, merge_keys):
@@ -91,7 +96,7 @@ def retry_operation(
         retryable_exceptions, 
         max_attempts=3
     ):
-    
+
     for current_attempt in range(max_attempts):
         try:
             return operation()
@@ -340,7 +345,10 @@ def ingest_table_idempotent(
         merge_keys,
         watermark_colum_name=None
     ):
-    conn = get_postgres_connection()
+    conn = retry_operation(
+        get_postgres_connection,
+        RETRYABLE_POSTGRES_ERRORS
+    )
 
     try:
         old_watermark = get_watermark(bq_table)
