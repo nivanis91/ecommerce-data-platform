@@ -10,23 +10,6 @@ from datetime import date, datetime
 
 import pandas as pd
 
-def load_dataframe_to_bigquery(df, table_id):
-    client = bigquery.Client()
-
-    job_config = bigquery.LoadJobConfig(
-        write_disposition=bigquery.WriteDisposition.WRITE_APPEND
-    )
-
-    job = client.load_table_from_dataframe(
-        df,
-        table_id,
-        job_config=job_config,
-    )
-    
-    job.result()
-
-    print(f"Loaded {len(df)} rows into {table_id}")
-
 from google.cloud import bigquery
 
 
@@ -230,17 +213,6 @@ def run_get_data_from_gcp():
     results = bq.query(query).result()
     for row in results:
         print(row)
-
-
-def ingest_table(extract_function, bq_table):
-    conn = get_postgres_connection()
-
-    try:
-        df = extract_function(conn)
-        
-        load_dataframe_to_bigquery(df, bq_table)
-    finally:
-        conn.close()
 
 def get_watermark(table_name):
     client = bigquery.Client()
