@@ -1,11 +1,12 @@
 import pandas as pd
 from google.cloud import bigquery
-
+import pytest
 from src.pipeline import merge_dataframe_to_bigquery
 
 
 TEST_TABLE_NAME = "ecommerce-data-platform-505412.test.orders"
 
+pytestmark = pytest.mark.integration
 
 def create_test_table(client):
     # Start with a clean table

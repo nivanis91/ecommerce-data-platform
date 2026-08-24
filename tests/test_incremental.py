@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import Mock
 
 from src.pipeline import ingest_table_idempotent
-
+pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def df():
