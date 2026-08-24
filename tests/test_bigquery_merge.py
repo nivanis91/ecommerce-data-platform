@@ -7,15 +7,7 @@ from src.pipeline import merge_dataframe_to_bigquery
 TEST_TABLE_NAME = "ecommerce-data-platform-505412.test.orders"
 
 
-def test_merge_is_idempotent():
-    client = bigquery.Client()
-
-    df = pd.DataFrame({
-        "order_id": [101, 102],
-        "customer_id": [1, 2],
-        "status": ["completed", "pending"]
-    })
-
+def create_test_table(client):
     # Start with a clean table
     client.delete_table(TEST_TABLE_NAME, not_found_ok=True)
 
@@ -27,6 +19,17 @@ def test_merge_is_idempotent():
 
     table = bigquery.Table(TEST_TABLE_NAME, schema=schema)
     client.create_table(table)
+
+def test_merge_is_idempotent():
+    client = bigquery.Client()
+
+    df = pd.DataFrame({
+        "order_id": [101, 102],
+        "customer_id": [1, 2],
+        "status": ["completed", "pending"]
+    })
+
+    create_test_table(client)
 
     try:
         # First ingestion
@@ -69,23 +72,13 @@ def test_merge_with_update_and_insert():
         "status": ["completed", "pending"]
     })
 
-    df_second_one = pd.DataFrame({
+    df_second = pd.DataFrame({
         "order_id": [102, 103],
         "customer_id": [2, 3],
         "status": ["completed", "on_delivery"]
     })
 
-    # Start with a clean table
-    client.delete_table(TEST_TABLE_NAME, not_found_ok=True)
-
-    schema = [
-        bigquery.SchemaField("order_id", "INT64"),
-        bigquery.SchemaField("customer_id", "INT64"),
-        bigquery.SchemaField("status", "STRING"),
-    ]
-
-    table = bigquery.Table(TEST_TABLE_NAME, schema=schema)
-    client.create_table(table)
+    create_test_table(client)
 
     try:
         # First ingestion
@@ -97,7 +90,7 @@ def test_merge_with_update_and_insert():
 
         # MERGE new data (UPDATE of an existing record + INSERT of a new record)
         merge_dataframe_to_bigquery(
-            df_second_one,
+            df_second,
             TEST_TABLE_NAME,
             ["order_id"]
         )
