@@ -8,6 +8,8 @@ from google.cloud import storage, bigquery
 from decimal import Decimal
 from datetime import date, datetime
 
+import time
+
 import pandas as pd
 
 from google.cloud import bigquery
@@ -68,10 +70,28 @@ def merge_dataframe_to_bigquery(df, table_id, merge_keys):
             VALUES ({insert_values})
     """
 
-    client.query(merge_query).result()
+    try:
+        retry_bigquery_operation(
+            lambda: client.query(merge_query).result()
+        )
+    finally:
+        client.delete_table(temp_table_id, not_found_ok=True)
 
-    # 4. Remove temporary table
-    client.delete_table(temp_table_id, not_found_ok=True)
+def retry_bigquery_operation(operation, max_attempts=3):
+    for current_attempt in range(max_attempts):
+        try:
+            return operation()
+        except:
+            if current_attempt == max_attempts - 1:
+                raise
+
+            # Double the wait time, afer each failed attempt
+            wait_time = 2 ** current_attempt
+            print(
+                f"BigQuery operation failed. "
+                f"Retrying in {wait_time}s..."
+            )
+            time.sleep(wait_time)
 
 def run_weather_ingestion():
 
