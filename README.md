@@ -111,3 +111,7 @@ The platform uses automated tests to verify ingestion behavior and data quality 
    Python integration tests execute against an isolated BigQuery `test` dataset, allowing the ingestion pipeline to be tested against real BigQuery operations without affecting production warehouse data.
 3. **dbt Data Quality Tests**  
    Custom dbt tests validate business rules and data quality assumptions, including campaign date ranges, campaign spending limits, and invalid or future order dates.
+   
+## Orchestration
+
+The ingestion pipeline is orchestrated using **Apache Airflow**, with independent tasks for PostgreSQL, marketing CSV, and weather data ingestion. The DAG is currently configured for manual execution, allowing each ingestion task to run independently.
