@@ -1,40 +1,24 @@
 ## Architecture
 
-                         ┌─────────────────┐
-                         │   PostgreSQL    │
-                         └────────┬────────┘
-                                  │
-                                  │
-┌─────────────────┐       ┌───────▼────────┐       ┌─────────────────┐
-│    S3 / CSV     │──────▶│ Python Pipeline│◀──────│   Weather API   │
-└─────────────────┘       │                │       └─────────────────┘
-                          │ • Incremental  │
-                          │ • Idempotent   │
-                          │ • Retries      │
-                          └───────┬────────┘
-                                  │
-                                  ▼
-                          ┌───────────────┐
-                          │   BigQuery    │
-                          │      RAW      │
-                          └───────┬───────┘
-                                  │
-                                  ▼
-                             ┌─────────┐
-                             │   dbt   │
-                             └────┬────┘
-                                  │
-                                  ▼
-                          ┌───────────────┐
-                          │   Analytics   │
-                          └───────────────┘
+```mermaid
+flowchart LR
+    PG[(PostgreSQL)]
+    S3[(S3 / CSV)]
+    API[Weather API]
 
+    PIPE["<div style='text-align: left'><b>Python Ingestion Pipeline</b><br/><br/>• Incremental Loading<br/>• Watermarks<br/>• Idempotent MERGE<br/>• Retry Handling</div>"]
 
-                    ┌──────────────────────┐
-                    │        Airflow       │
-                    │   Orchestration &    │
-                    │      Scheduling      │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                        Python Pipeline
+    BQ[(BigQuery<br/>Raw)]
+    DBT[dbt]
+    ANALYTICS[(Analytics)]
+    AIRFLOW[Airflow]
+
+    PG --> PIPE
+    S3 --> PIPE
+    API --> PIPE
+
+    PIPE --> BQ
+    BQ --> DBT
+    DBT --> ANALYTICS
+
+    AIRFLOW -. "Orchestrates" .-> PIPE
