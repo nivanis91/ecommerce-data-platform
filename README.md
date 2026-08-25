@@ -12,6 +12,7 @@ flowchart LR
     DBT[dbt]
     ANALYTICS[(Analytics)]
     AIRFLOW[Airflow]
+   TESTS["Testing<br/>• Unit Tests<br/>• Integration Tests"]
 
     PG --> PIPE
     S3 --> PIPE
