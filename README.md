@@ -86,3 +86,28 @@ The BigQuery warehouse is organized into three layers, separating source data fr
 
 3. **Analytics**  
    Contains business-ready models organized using a **star schema**, with fact and dimension tables designed for analytical queries and reporting. The models combine e-commerce, marketing, and weather data to support analysis of purchases and customer behavior.
+
+## Data Transformation
+
+The transformation layer is built with **dbt**, converting the raw and staged data into analytical models organized around a star schema.
+
+1. **Staging Models**  
+   Lightweight models that select the required columns from the Raw layer and provide a consistent interface for downstream transformations.
+
+2. **Fact and Dimension Models**  
+   Analytical models are organized using a **star schema**, separating measurable business events into fact tables from descriptive attributes in dimension tables.
+
+3. **Data Quality Tests**
+Custom dbt tests validate business rules and data quality assumptions, including campaign date ranges, campaign spending limits, and invalid or future order dates.
+
+## Testing & Data Quality
+
+The platform uses automated tests to verify ingestion behavior and data quality across the pipeline.
+
+1. **Python Unit Tests**  
+   Unit tests cover core ingestion logic, including incremental loading, BigQuery `MERGE` operations, and retry behavior.
+
+2. **Python integration tests**  
+   Python integration tests execute against an isolated BigQuery `test` dataset, allowing the ingestion pipeline to be tested against real BigQuery operations without affecting production warehouse data.
+3. **dbt Data Quality Tests**  
+   Custom dbt tests validate business rules and data quality assumptions, including campaign date ranges, campaign spending limits, and invalid or future order dates.
