@@ -12,6 +12,9 @@ from src.ingestion.utils import retry_operation, should_retry_postgres, should_r
 import pandas as pd
 
 from google.cloud import bigquery
+import logging
+
+logger = logging.getLogger(__name__)
 
 def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     client = bigquery.Client()
@@ -75,6 +78,12 @@ def merge_dataframe_to_bigquery(df, table_id, merge_keys):
         )
     finally:
         client.delete_table(temp_table_id, not_found_ok=True)
+
+    logger.info(
+        "Loaded %s rows into %s",
+        len(df),
+        table_id
+    )
 
 def run_weather_ingestion():
 
@@ -179,9 +188,9 @@ def run_marketing_csv_ingestion():
     files_array = []
     all_files_data_frame = pd.DataFrame()
 
-    print("Files to load:")
+    logger.info("Files to load:")
     for file in files:
-        print(file)
+        logger.info("Loading marketing file: %s", file)
         loaded_csv = load_csv(
             s3,
             file
@@ -314,9 +323,19 @@ def ingest_table_idempotent(
         should_retry_postgres
     )
 
+    logger.info('-------------------------------------------')
+
+    logger.info(
+        "Starting the load for table: %s",
+        bq_table
+    )
+    
     try:
         old_watermark = get_watermark(bq_table)
-        print(f"Old watermark value: {old_watermark}")
+        logger.info(
+            "Old watermark value: %s",
+            old_watermark
+        )
 
         df = extract_function(conn, old_watermark)
         
@@ -335,11 +354,12 @@ def ingest_table_idempotent(
 
         merge_dataframe_to_bigquery(df, bq_table, merge_keys)
 
-        print(f"\n{'=' * 60}")
-        print(f"Table: {bq_table}")
-        print(f"Watermark: {old_watermark}")
-        print(f"Rows extracted: {len(df)}")
-        print(f"\n{'=' * 60}")
+        logger.info(
+            "Ingestion completed: table=%s, watermark=%s, rows=%s",
+            bq_table,
+            old_watermark,
+            len(df)
+        )
 
         new_watermark = df[watermark_colum_name].max()
 
@@ -373,8 +393,12 @@ def run_postgres_ingestion():
     ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
     
 if __name__ == "__main__":
-    #run_weather_ingestion()
-    #run_marketing_csv_ingestion()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
+        
+    run_weather_ingestion()
+    run_marketing_csv_ingestion()
     run_postgres_ingestion()
-    #run_get_data_from_gcp()
 

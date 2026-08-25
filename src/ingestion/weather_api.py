@@ -6,6 +6,10 @@ import requests
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def fetch_weather(latitude, longitude, start_date, end_date):
     params = {
         "latitude": latitude,
@@ -73,5 +77,8 @@ if __name__ == "__main__":
 
         all_weather = pd.concat([all_weather, df], ignore_index=True)
 
-    print(all_weather.tail(15))
-    print(f"Rows: {len(df)}")
+    logger.info(
+        "Loaded %s rows into %s",
+        len(all_weather),
+        'raw.weather'
+    )

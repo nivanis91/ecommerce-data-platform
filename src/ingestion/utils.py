@@ -2,6 +2,8 @@ import time
 import requests
 import psycopg2
 from google.api_core import exceptions
+import logging
+logger = logging.getLogger(__name__)
 
 RETRYABLE_HTTP_STATUS_CODES = {
     429,
@@ -43,9 +45,9 @@ def retry_operation(
 
             # Double the wait time, afer each failed attempt
             wait_time = 2 ** current_attempt
-            print(
-                f"Operation failed. "
-                f"Retrying in {wait_time}s..."
+            logger.warning(
+                "Operation failed. Retrying in %s seconds",
+                wait_time
             )
             time.sleep(wait_time)
 
