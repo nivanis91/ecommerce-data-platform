@@ -40,3 +40,36 @@ flowchart TB
     DBT --> ANALYTICS
 
     TESTS -. "Validates" .-> PIPE
+```
+
+## Data Ingestion Sources
+
+The platform brings together data from three different sources, each representing a different part of the business: transactional data from an OLTP database, marketing data delivered as CSV files through cloud object storage, and external weather data from a public API.
+
+1. **PostgreSQL**  
+   Primary OLTP database containing transactional e-commerce data across orders, customers, stores, products, and order items.
+
+2. **Amazon S3 (Marketing Campaign Files)**  
+   Cloud object storage containing CSV files with marketing campaign information, budgets, spend, channels, and dates.
+
+3. **Weather API**  
+   External API providing historical weather observations for selected cities, adding environmental context to sales data and enabling analysis of how weather conditions may influence purchases and customer behavior.
+
+## Pipeline Design
+
+The ingestion pipeline is built around three core principles:
+
+1. **Incremental Loading**  
+   The pipeline tracks a watermark for each source table and uses it to determine which records need to be extracted during subsequent runs.
+
+   This avoids repeatedly processing the entire source dataset.
+
+2. **Idempotent Loading**  
+   Incoming records are loaded into temporary BigQuery tables and merged into the target tables using their natural keys.
+
+   This allows the same data to be safely processed multiple times without creating duplicate records.
+
+3. **Retry Handling**  
+   Transient failures are retried using exponential backoff.
+
+   Retryable errors are defined separately for the different external systems rather than retrying every exception indiscriminately.
