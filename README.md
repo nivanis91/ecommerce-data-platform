@@ -115,3 +115,22 @@ The platform uses automated tests to verify ingestion behavior and data quality 
 ## Orchestration
 
 The ingestion pipeline is orchestrated using **Apache Airflow**, with independent tasks for PostgreSQL, marketing CSV, and weather data ingestion. The DAG is currently configured for manual execution, allowing each ingestion task to run independently.
+
+## Project Structure
+
+```text
+ecommerce-data-platform/
+├── dags/                   # Airflow DAGs
+├── src/
+│   ├── config/             # Pipeline configuration
+│   ├── ingestion/          # Data ingestion modules
+│   └── pipeline.py         # Pipeline orchestration logic
+├── dbt_ecommerce/          # dbt transformation project
+│   ├── models/
+│   │   ├── staging/
+│   │   └── marts/
+│   └── tests/              # dbt data quality tests
+├── tests/                  # Python unit and integration tests
+├── docker-compose.yml      # Local Airflow environment
+├── requirements.txt        # Python dependencies
+└── pytest.ini              # Pytest configuration
