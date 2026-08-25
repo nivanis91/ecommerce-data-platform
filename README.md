@@ -73,3 +73,16 @@ The ingestion pipeline is built around three core principles:
    Transient failures are retried using exponential backoff.
 
    Retryable errors are defined separately for the different external systems rather than retrying every exception indiscriminately.
+
+## Data Warehouse Design
+
+The BigQuery warehouse is organized into three layers, separating source data from analytical models:
+
+1. **Raw**  
+   Contains data ingested directly from the source systems with minimal transformation, preserving the source data for downstream processing.
+
+2. **Staging**  
+   Contains lightweight dbt models that select the required columns from the Raw layer and provide a consistent foundation for downstream analytical modeling.
+
+3. **Analytics**  
+   Contains business-ready models organized using a **star schema**, with fact and dimension tables designed for analytical queries and reporting. The models combine e-commerce, marketing, and weather data to support analysis of purchases and customer behavior.
