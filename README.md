@@ -1,3 +1,17 @@
+# E-commerce Data Platform
+
+A production-style data engineering pipeline that ingests e-commerce and external data from multiple sources into BigQuery.
+
+## Key Engineering Features
+
+- **Incremental ingestion** using source-specific watermarks
+- **Idempotent loading** using BigQuery `MERGE` operations
+- **Retry handling** for transient PostgreSQL, BigQuery, and API failures
+- **Data validation and cleaning** for incoming datasets
+- **Unit and integration tests**
+- **Airflow orchestration** for pipeline execution
+- **Structured logging** for pipeline observability
+
 ## Architecture
 
 ```mermaid
