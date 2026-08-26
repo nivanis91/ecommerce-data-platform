@@ -2,6 +2,7 @@
 import pandas as pd
 from src.config.cities import CITIES
 from src.ingestion.utils import retry_operation, should_retry_weather
+from src.ingestion.notifications import slack_alert_for
 import requests
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -72,7 +73,8 @@ if __name__ == "__main__":
                 start_date="2026-08-01",
                 end_date="2026-08-12",
             ),
-            should_retry_weather
+            should_retry_weather,
+            on_exhausted=slack_alert_for("Weather ingestion")
         )
 
         all_weather = pd.concat([all_weather, df], ignore_index=True)

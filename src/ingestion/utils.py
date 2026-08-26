@@ -30,7 +30,8 @@ RETRYABLE_BIGQUERY_ERRORS = (
 def retry_operation(
         operation, 
         should_retry, 
-        max_attempts=3
+        max_attempts=3,
+        on_exhausted=None
     ):
 
     for current_attempt in range(max_attempts):
@@ -42,6 +43,9 @@ def retry_operation(
             if not should_retry(exc):
                 raise
             if current_attempt == max_attempts - 1:
+                if on_exhausted:
+                    on_exhausted(exc)
+                    
                 raise
 
             # Double the wait time, afer each failed attempt

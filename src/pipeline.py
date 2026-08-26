@@ -8,6 +8,7 @@ from google.cloud import storage, bigquery
 from decimal import Decimal
 from datetime import date, datetime
 from src.ingestion.utils import retry_operation, should_retry_postgres, should_retry_bigquery
+from src.ingestion.notifications import slack_alert_for
 
 import pandas as pd
 
@@ -74,7 +75,10 @@ def merge_dataframe_to_bigquery(df, table_id, merge_keys):
     try:
         retry_operation(
             lambda: client.query(merge_query).result(),
-            should_retry_bigquery
+            should_retry_bigquery,
+            on_exhausted=slack_alert_for(
+                f"Merge operation to BigQuery for table: {table_id}"
+            )
         )
     finally:
         client.delete_table(temp_table_id, not_found_ok=True)
@@ -320,7 +324,10 @@ def ingest_table_idempotent(
     ):
     conn = retry_operation(
         get_postgres_connection,
-        should_retry_postgres
+        should_retry_postgres,
+        on_exhausted=slack_alert_for(
+            f"Get Postgres connection before ingesting table: {bq_table}"
+        )
     )
 
     logger.info('-------------------------------------------')
@@ -331,13 +338,26 @@ def ingest_table_idempotent(
     )
     
     try:
-        old_watermark = get_watermark(bq_table)
+        old_watermark = retry_operation(
+            lambda: get_watermark(bq_table),
+            should_retry_bigquery,
+            on_exhausted=slack_alert_for(
+                f"Get watermark from BigQuery for table: {bq_table}"
+            )
+        )
+
         logger.info(
             "Old watermark value: %s",
             old_watermark
         )
 
-        df = extract_function(conn, old_watermark)
+        df = retry_operation(
+            lambda: extract_function(conn, old_watermark),
+            should_retry_postgres,
+            on_exhausted=slack_alert_for(
+                f"Extract data from Postgres for table: {bq_table}"
+            )
+        )
         
         if df.empty:
             return
