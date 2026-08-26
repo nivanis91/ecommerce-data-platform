@@ -69,10 +69,10 @@ The ingestion pipeline is built around three core principles:
 
    This allows the same data to be safely processed multiple times without creating duplicate records.
 
-3. **Retry Handling**  
-   Transient failures are retried using exponential backoff.
+3. **Retry & Failure Handling**  
+   Transient failures are handled through a reusable retry mechanism with configurable maximum attempts and exponential backoff. Retry policies are defined according to the characteristics of each external system. Non-retryable errors are propagated immediately, while retryable failures are retried until the maximum number of attempts is reached.
 
-   Retryable errors are defined separately for the different external systems rather than retrying every exception indiscriminately.
+   When all retry attempts are exhausted, the pipeline triggers a Slack alert containing the failed operation and error details before propagating the original exception.
 
 ## Data Warehouse Design
 
