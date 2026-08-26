@@ -1,6 +1,6 @@
 # E-commerce Data Platform
 
-A production-style data engineering pipeline that ingests e-commerce and external data from multiple sources into BigQuery, transforms and models the data into analytics-ready datasets, and exposes curated data for downstream analysis and reporting.
+A production-style data engineering platform that ingests e-commerce and external data from multiple sources into BigQuery, with incremental and idempotent loading, automated retries, failure alerting, and dbt-based transformations.
 
 ## Key Engineering Features
 
