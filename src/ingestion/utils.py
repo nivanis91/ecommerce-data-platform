@@ -37,7 +37,8 @@ def retry_operation(
         try:
             return operation()
         except Exception as exc:
-            print(exc)
+            logger.warning("Operation failed: %s", exc)
+            
             if not should_retry(exc):
                 raise
             if current_attempt == max_attempts - 1:
@@ -46,7 +47,7 @@ def retry_operation(
             # Double the wait time, afer each failed attempt
             wait_time = 2 ** current_attempt
             logger.warning(
-                "Operation failed. Retrying in %s seconds",
+                "Retrying in %s seconds",
                 wait_time
             )
             time.sleep(wait_time)
