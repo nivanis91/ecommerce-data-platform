@@ -16,9 +16,11 @@ def send_slack_alert(operation_name, exc):
     webhook_url = os.environ["SLACK_WEBHOOK_URL"]
 
     message = (
-        "🚨 Data pipeline alert\n\n"
-        f"Retry attempts exhausted.\n"
-        f"Error: {exc}"
+        "🚨 Data Pipeline Alert\n\n"
+        f"Operation: {operation_name}\n"
+        "Status: FAILED\n"
+        f"Error: {exc}\n\n"
+        "Automatic retries exhausted."
     )
 
     try:
