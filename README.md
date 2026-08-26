@@ -6,9 +6,11 @@ A production-style data engineering platform that ingests e-commerce and externa
 
 - **Incremental ingestion** using source-specific watermarks
 - **Idempotent loading** using BigQuery `MERGE` operations
-- **Retry handling** for transient PostgreSQL, BigQuery, and API failures
+- **dbt transformations** for staging and analytical data models
+- **Retry/failure handling** for transient PostgreSQL, BigQuery, and API failures
 - **Data validation and cleaning** for incoming datasets
-- **Unit and integration tests**
+- **Automated testing** with unit and integration tests
+- **Slack alerting** when retryable operations exhaust their maximum attempts
 - **Airflow orchestration** for pipeline execution
 - **Structured logging** for pipeline observability
 
@@ -102,7 +104,7 @@ Custom dbt tests validate business rules and data quality assumptions, including
 
 ## Testing & Data Quality
 
-The platform uses automated tests to verify ingestion behavior and data quality across the pipeline.
+Automated tests cover ingestion and transformation behavior, including incremental loading, idempotent MERGE operations, retry logic, failure handling, and alert triggering when retry attempts are exhausted.
 
 1. **Python Unit Tests**  
    Unit tests cover core ingestion logic, including incremental loading, BigQuery `MERGE` operations, and retry behavior.
