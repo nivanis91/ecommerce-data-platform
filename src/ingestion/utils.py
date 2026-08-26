@@ -4,6 +4,8 @@ import psycopg2
 from google.api_core import exceptions
 import logging
 logger = logging.getLogger(__name__)
+import botocore
+
 
 RETRYABLE_HTTP_STATUS_CODES = {
     429,
@@ -79,3 +81,17 @@ should_retry_bigquery = lambda exc: isinstance(
             exc,
             RETRYABLE_BIGQUERY_ERRORS
         )
+
+def should_retry_s3(exc):
+    if not isinstance(exc, botocore.exceptions.ClientError):
+        return False
+
+    error_code = exc.response.get("Error", {}).get("Code")
+
+    return error_code in {
+        "RequestTimeout",
+        "RequestTimeTooSkewed",
+        "SlowDown",
+        "InternalError",
+        "ServiceUnavailable",
+    }

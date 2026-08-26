@@ -7,7 +7,7 @@ from src.config.cities import CITIES
 from google.cloud import storage, bigquery
 from decimal import Decimal
 from datetime import date, datetime
-from src.ingestion.utils import retry_operation, should_retry_postgres, should_retry_bigquery
+from src.ingestion.utils import retry_operation, should_retry_postgres, should_retry_bigquery, should_retry_s3
 from src.ingestion.notifications import slack_alert_for
 
 import pandas as pd
@@ -94,13 +94,19 @@ def run_weather_ingestion():
     conn = get_postgres_connection()
 
     table_name = 'raw.weather'
-    watermark = get_watermark(table_name)
+    old_watermark = retry_operation(
+        lambda: get_watermark(table_name),
+        should_retry_bigquery,
+        on_exhausted=slack_alert_for(
+            f"Get watermark from BigQuery for table: {table_name}"
+        )
+    )
 
-    if watermark is None:
-        watermark = 0
+    if old_watermark is None:
+        old_watermark = 0
 
     try:
-        dates = get_order_date_range(conn, watermark).iloc[0]
+        dates = get_order_date_range(conn, old_watermark).iloc[0]
     finally:
         conn.close()
 
@@ -135,7 +141,7 @@ def run_weather_ingestion():
     if len(result) > 0:
         new_watermark = dates['max_id_for_range']
 
-        if int(new_watermark) > int(watermark):
+        if int(new_watermark) > int(old_watermark):
             update_watermark(
                 table_name,
                 str(new_watermark)
@@ -176,17 +182,36 @@ def clean_marketing_data_frame_before_db_upload(all_files_data_frame):
 def run_marketing_csv_ingestion():
     table_name = 'raw.marketing_campaigns'
 
-    watermark = get_watermark(table_name)
-    if watermark is None:
-        watermark = '19990101'
+    old_watermark = retry_operation(
+        lambda: get_watermark(table_name),
+        should_retry_bigquery,
+        on_exhausted=slack_alert_for(
+            f"Get watermark from BigQuery for table: {table_name}"
+        )
+    )
 
-    s3 = get_s3_client()
+    if old_watermark is None:
+        old_watermark = '19990101'
 
-    files = list_files(s3)
+    s3 = retry_operation(
+        get_s3_client,
+        should_retry_s3,
+        on_exhausted=slack_alert_for(
+            "Get S3 client before ingesting marketing campaigns"
+            )
+    )
+
+    files = retry_operation(
+        lambda: list_files(s3),
+        should_retry_s3,
+        on_exhausted=slack_alert_for(
+            "List marketing campaign files from S3"
+        )
+    )
 
     files = [
         file for file in files
-        if file.removesuffix('.csv').split('_')[-1] >= watermark
+        if file.removesuffix('.csv').split('_')[-1] >= old_watermark
     ]
 
     files_array = []
@@ -211,7 +236,7 @@ def run_marketing_csv_ingestion():
     if len(df) > 0:
         new_watermark = max(file.removesuffix(".csv").split("_")[-1] for file in files)
 
-        if int(new_watermark) > int(watermark):
+        if int(new_watermark) > int(old_watermark):
             update_watermark(
                 table_name,
                 str(new_watermark)
