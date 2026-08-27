@@ -6,5 +6,6 @@ select
     city,
     country,
     created_at,
+    updated_at,
     _ingested_at
 from {{ source('raw', 'customers') }}
