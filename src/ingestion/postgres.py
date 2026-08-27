@@ -92,6 +92,27 @@ def extract_orders(
         }
     )
 
+def extract_orders_backfill(
+    conn,
+    start_date_inclusive,
+    end_date_exclusive
+):
+    query = """
+        SELECT *
+        FROM orders
+        WHERE created_at >= %(start_date_inclusive)s AND
+              created_at <= %(end_date_exclusive)s
+    """
+
+    return pd.read_sql(
+        query,
+        conn,
+        params={
+            "start_date": start_date_inclusive,
+            "end_date": end_date_exclusive,
+        },
+    )
+
 def extract_order_items(
         conn, 
         last_watermark=None

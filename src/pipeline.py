@@ -1,6 +1,14 @@
 import os
 from src.config.connections import get_postgres_connection, get_s3_client
-from src.ingestion.postgres import get_order_date_range, extract_orders, extract_customers, extract_stores, extract_order_items, extract_products
+from src.ingestion.postgres import (
+    get_order_date_range, 
+    extract_orders, 
+    extract_customers, 
+    extract_stores, 
+    extract_order_items, 
+    extract_products,
+    extract_orders_backfill
+)
 from src.ingestion.weather_api import get_weather
 from src.ingestion.csv_import import list_files, load_csv
 from src.config.cities import CITIES
@@ -430,13 +438,96 @@ def ingest_table_idempotent(
     finally:
         conn.close()
 
+def ingest_table_backfill(
+        extract_function, 
+        bq_table, 
+        merge_keys,
+        start_date_inclusive,
+        end_date_exclusive
+    ):
+    conn = retry_operation(
+        get_postgres_connection,
+        should_retry_postgres,
+        on_exhausted=slack_alert_for(
+            f"Get Postgres connection before backfilling table: {bq_table}"
+        )
+    )
+
+    logger.info('-------------------------------------------')
+
+    logger.info(
+        "Starting the backfill for table: %s",
+        bq_table
+    )
+
+    logger.info(
+        "Backfill range: [%s, %s)",
+        start_date_inclusive,
+        end_date_exclusive
+    )
+
+    try:
+        df = retry_operation(
+            lambda: extract_function(
+                conn,
+                start_date_inclusive,
+                end_date_exclusive
+            ),
+            should_retry_postgres,
+            on_exhausted=slack_alert_for(
+                f"Extract data from Postgres for table: {bq_table}"
+            )
+        )
+        
+        if df.empty:
+            logger.info(
+                "No data found for backfill range: %s → %s",
+                start_date_inclusive,
+                end_date_exclusive
+            )
+            return
+        
+        datetime_columns = df.select_dtypes(
+            include=["datetime", "datetimetz"]
+        ).columns
+
+        for column in datetime_columns:
+            df[column] = pd.to_datetime(
+                df[column],
+                utc=True
+        )
+
+        merge_dataframe_to_bigquery(df, bq_table, merge_keys)
+
+        logger.info(
+            "Backfill completed: table=%s, start_date_inclusive=%s, end_date_exclusive=%s, rows=%s",
+            bq_table,
+            start_date_inclusive,
+            end_date_exclusive,
+            len(df)
+        )
+
+    finally:
+        conn.close()
+
 def run_postgres_ingestion():
     ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'], "updated_at")
     ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
     ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
     ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
     ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
-    
+
+def run_orders_backfill(
+    start_date_inclusive,
+    end_date_exclusive
+):
+    ingest_table_backfill(
+        extract_orders_backfill,
+        "raw.orders",
+        ["order_id"],
+        start_date_inclusive,
+        end_date_exclusive,
+    )
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
