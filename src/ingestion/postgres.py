@@ -58,7 +58,7 @@ def extract_customers(
     query = """
         SELECT *
         FROM customers
-        WHERE created_at >= %(last_watermark)s
+        WHERE updated_at >= %(last_watermark)s
     """
 
     return pd.read_sql(
