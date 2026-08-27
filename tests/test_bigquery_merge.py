@@ -1,7 +1,7 @@
 import pandas as pd
 from google.cloud import bigquery
 import pytest
-from src.pipeline import merge_dataframe_to_bigquery, ingest_table_backfill, get_watermark
+from src.pipeline import merge_dataframe_to_bigquery, ingest_table_backfill, get_watermark, ingest_table_idempotent
 
 
 TEST_TABLE_NAME = "ecommerce-data-platform-505412.test.orders"
@@ -117,7 +117,7 @@ def test_merge_with_update_and_insert():
         client.delete_table(TEST_TABLE_NAME, not_found_ok=True)
 
 
-def test_backfill_updates_existing_records():
+def test_backfill_updates_existing_records_and_preserves_watermark():
     client = bigquery.Client()
 
     df = pd.DataFrame({
@@ -141,14 +141,15 @@ def test_backfill_updates_existing_records():
     create_test_table(client)
 
     try:
-        watermark_before = get_watermark(TEST_TABLE_NAME)
-
         # First ingestion
-        merge_dataframe_to_bigquery(
-            df,
-            TEST_TABLE_NAME,
-            ["order_id"]
+        ingest_table_idempotent(
+            lambda conn, old_watermark: df, 
+            TEST_TABLE_NAME, 
+            ['order_id'], 
+            "updated_at"
         )
+
+        watermark_before = get_watermark(TEST_TABLE_NAME)
 
         # Backfill
         ingest_table_backfill(
