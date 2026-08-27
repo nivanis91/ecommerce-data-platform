@@ -528,13 +528,18 @@ def run_orders_backfill(
         start_date_inclusive,
         end_date_exclusive,
     )
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
         
-    run_weather_ingestion()
-    run_marketing_csv_ingestion()
-    run_postgres_ingestion()
+    #run_weather_ingestion()
+    #run_marketing_csv_ingestion()
+    #run_postgres_ingestion()
+    run_orders_backfill(
+        start_date_inclusive="2026-08-01",
+        end_date_exclusive="2026-08-08"
+    )
 

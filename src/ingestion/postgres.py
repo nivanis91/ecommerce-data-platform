@@ -100,16 +100,16 @@ def extract_orders_backfill(
     query = """
         SELECT *
         FROM orders
-        WHERE created_at >= %(start_date_inclusive)s AND
-              created_at <= %(end_date_exclusive)s
+        WHERE updated_at >= %(start_date_inclusive)s AND
+              updated_at <= %(end_date_exclusive)s
     """
 
     return pd.read_sql(
         query,
         conn,
         params={
-            "start_date": start_date_inclusive,
-            "end_date": end_date_exclusive,
+            "start_date_inclusive": start_date_inclusive,
+            "end_date_exclusive": end_date_exclusive,
         },
     )
 
