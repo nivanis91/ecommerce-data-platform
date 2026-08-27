@@ -1,7 +1,7 @@
 import pandas as pd
 from google.cloud import bigquery
 import pytest
-from src.pipeline import merge_dataframe_to_bigquery, ingest_table_backfill
+from src.pipeline import merge_dataframe_to_bigquery, ingest_table_backfill, get_watermark
 
 
 TEST_TABLE_NAME = "ecommerce-data-platform-505412.test.orders"
@@ -141,6 +141,8 @@ def test_backfill_updates_existing_records():
     create_test_table(client)
 
     try:
+        watermark_before = get_watermark(TEST_TABLE_NAME)
+
         # First ingestion
         merge_dataframe_to_bigquery(
             df,
@@ -156,6 +158,9 @@ def test_backfill_updates_existing_records():
             "2026-08-01",
             "2026-08-03",
         )
+
+        watermark_after = get_watermark(TEST_TABLE_NAME)
+        assert watermark_after == watermark_before
 
         query = f"""
             SELECT order_id, customer_id, status
