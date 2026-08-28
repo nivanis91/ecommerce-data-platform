@@ -512,7 +512,7 @@ def ingest_table_backfill(
 
 def run_postgres_ingestion():
     ingest_table_idempotent(extract_orders, "raw.orders", ['order_id'], "updated_at")
-    ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "created_at")
+    ingest_table_idempotent(extract_customers, "raw.customers", ['customer_id'], "updated_at")
     ingest_table_idempotent(extract_stores, "raw.stores", ['store_id'], "opened_at")
     ingest_table_idempotent(extract_products, "raw.products", ['product_id'], "created_at")
     ingest_table_idempotent(extract_order_items, "raw.order_items", ['order_item_id'], "order_item_id")
@@ -537,9 +537,10 @@ if __name__ == "__main__":
         
     #run_weather_ingestion()
     #run_marketing_csv_ingestion()
-    #run_postgres_ingestion()
-    run_orders_backfill(
+    run_postgres_ingestion()
+    '''run_orders_backfill(
         start_date_inclusive="2026-08-01",
         end_date_exclusive="2026-08-08"
     )
+    '''
 

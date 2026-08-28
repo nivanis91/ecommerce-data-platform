@@ -2,6 +2,7 @@ from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 
 from src.pipeline import (
     run_postgres_ingestion,
@@ -32,3 +33,13 @@ with DAG(
         python_callable=run_weather_ingestion,
     )
 
+    dbt_build = BashOperator(
+        task_id="dbt_build",
+        bash_command=(
+            "cd /opt/airflow/project/dbt_ecommerce && "
+            "dbt build"
+        ),
+    )
+
+    [marketing_ingestion, postgres_ingestion, weather_ingestion] >> dbt_build
+    

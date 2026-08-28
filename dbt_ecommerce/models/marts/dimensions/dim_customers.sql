@@ -12,6 +12,8 @@ SELECT
     email,
     city,
     country,
-    created_at
+    created_at,
+    updated_at
 
-FROM {{ ref('stg_customers') }}
+FROM {{ ref('customers_snapshot') }}
+WHERE dbt_valid_to IS NULL

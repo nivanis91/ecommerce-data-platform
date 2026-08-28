@@ -15,7 +15,9 @@ services:
     restart: always
 
   airflow-init:
-    image: apache/airflow:3.0.4
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     depends_on:
       postgres:
         condition: service_healthy
@@ -27,11 +29,14 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - /home/codespace/.dbt:/home/airflow/.dbt
     command: >
       bash -c "airflow db migrate"
 
   airflow-apiserver:
-    image: apache/airflow:3.0.4
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     depends_on:
       airflow-init:
         condition: service_completed_successfully
@@ -45,13 +50,16 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - /home/codespace/.dbt:/home/airflow/.dbt
     ports:
       - "8080:8080"
     command: api-server
     restart: always
 
   airflow-scheduler:
-    image: apache/airflow:3.0.4
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     depends_on:
       airflow-init:
         condition: service_completed_successfully
@@ -78,11 +86,14 @@ services:
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./:/opt/airflow/project
+      - /home/codespace/.dbt:/home/airflow/.dbt
     command: scheduler
     restart: always
    
   airflow-dag-processor:
-    image: apache/airflow:3.0.4
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     depends_on:
       airflow-init:
         condition: service_completed_successfully
@@ -108,6 +119,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./:/opt/airflow/project
+      - /home/codespace/.dbt:/home/airflow/.dbt
     command: dag-processor
     restart: always
 
